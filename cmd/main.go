@@ -15,5 +15,5 @@ func homeLink(response http.ResponseWriter, request *http.Request) {
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
-	log.Fatal(http.ListenAndServe(":3000", router))
+	log.Fatal(http.ListenAndServe(":5000", router))
 }
