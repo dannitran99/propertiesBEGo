@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"propertiesGo/pkg/handler"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -19,5 +20,5 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
-	log.Fatal(http.ListenAndServe(":5000", router))
+	log.Fatal(http.ListenAndServe(":5000", handlers.CORS()(router)))
 }
