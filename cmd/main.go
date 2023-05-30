@@ -20,5 +20,6 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
+	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
 	log.Fatal(http.ListenAndServe(":5000", handlers.CORS()(router)))
 }

@@ -3,11 +3,14 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
+	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -34,4 +37,29 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	json.NewEncoder(writer).Encode(people)
+}
+
+func GetNewsByID(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	var news dto.News
+	id, _ := mux.Vars(request)["id"]
+	
+	i, err := strconv.Atoi(id)
+    if err != nil {
+        // ... handle error
+        panic(err)
+    }
+	
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := utils.MongoConnect("News")
+	err = collection.FindOne(ctx, dto.News{ID: i}).Decode(&news)
+	fmt.Println(dto.News{ID: i})
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(news)
 }
