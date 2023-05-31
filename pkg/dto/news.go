@@ -1,8 +1,10 @@
 package dto
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type News struct {
-	ID        int    `json:"_id"`
-	Name      string `json:"name"`
-	Content   string `json:"content"`
-	Thumbnail string `json:"thumbnail"`
+	ID        primitive.ObjectID `bson:"_id"`
+	Name      string             `json:"name"`
+	Content   string             `json:"content"`
+	Thumbnail string             `json:"thumbnail"`
 }
