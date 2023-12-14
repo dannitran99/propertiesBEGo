@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"propertiesGo/pkg/handler"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 
@@ -19,8 +19,17 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
+	router.HandleFunc("/api/login", handler.Login).Methods(http.MethodPost)
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
-	log.Fatal(http.ListenAndServe(":5000", handlers.CORS()(router)))
+
+	c := cors.New(cors.Options{
+        AllowedOrigins: []string{"http://localhost:8080"},
+        AllowCredentials: true,
+    })
+
+    handler := c.Handler(router)
+
+	log.Fatal(http.ListenAndServe(":5000", handler))
 }
