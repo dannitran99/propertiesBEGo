@@ -49,7 +49,10 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
 		return
 	}
-	json.NewEncoder(writer).Encode(token)
+    var reponse dto.LoginResponse
+    reponse.Token = token
+    reponse.Username = user.Username
+	json.NewEncoder(writer).Encode(reponse)
 }
 
 func Register(writer http.ResponseWriter, request *http.Request) {
