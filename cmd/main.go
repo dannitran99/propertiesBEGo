@@ -24,6 +24,7 @@ func main() {
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
+	router.HandleFunc("/api/postProperties", handler.PostProperties).Methods(http.MethodPost)
 
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},
