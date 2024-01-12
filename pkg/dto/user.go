@@ -8,3 +8,9 @@ type User struct {
 	Password  string             `json:"password"`
 	Email 	  string			 `json:"email"`
 }
+
+type ChangePassword struct {
+	User				string          `json:"user"`
+	CurrentPassword  	string          `json:"currentPassword"`
+	NewPassword  		string          `json:"newPassword"`
+}

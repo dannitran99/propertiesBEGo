@@ -3,7 +3,7 @@ package dto
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Properties struct {
-	ID        		primitive.ObjectID `bson:"_id"`
+	ID        		primitive.ObjectID  `bson:"_id"`
 	Type      		string              `json:"type"`
     PropertyType    string    			`json:"propertyType"`    
 	City    		string    			`json:"city"`    
@@ -15,7 +15,7 @@ type Properties struct {
 	Title    		string    			`json:"title"` 
 	Description    	string    			`json:"description"` 
 	Area    		int32    			`json:"area"` 
-	Price    		int32    			`json:"price"` 
+	Price    		int64    			`json:"price"` 
 	PriceType    	string    			`json:"priceType"` 
 	Images    		[]Image  			`json:"images"` 
 	Url    			string    			`json:"url"` 

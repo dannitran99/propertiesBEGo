@@ -94,3 +94,42 @@ func Register(writer http.ResponseWriter, request *http.Request) {
     result, _ := collection.InsertOne(ctx, doc)
 	json.NewEncoder(writer).Encode(result)
 }
+
+func ChangePassword(writer http.ResponseWriter, request *http.Request) {
+    body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+    var newPass dto.ChangePassword
+    err = json.Unmarshal(body, &newPass)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+    var userDb dto.User
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Users")
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: newPass.User}}).Decode(&userDb)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
+		return
+	}
+    if utils.SHA1(newPass.CurrentPassword) != userDb.Password {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Mật khẩu cũ không đúng" }`))
+		return
+    }
+    update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: utils.SHA1(newPass.NewPassword)}}}}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
+    if err != nil {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Đổi không thành công" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
+}
