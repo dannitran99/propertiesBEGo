@@ -18,3 +18,8 @@ type ChangePassword struct {
 	CurrentPassword  	string          `json:"currentPassword"`
 	NewPassword  		string          `json:"newPassword"`
 }
+
+type ChangeAvatar struct {
+	User				string          `json:"user"`
+	Avatar  	string          		`json:"avatar"`
+}

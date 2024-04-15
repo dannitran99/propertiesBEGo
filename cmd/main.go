@@ -19,13 +19,17 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
+
 	router.HandleFunc("/api/login", handler.Login).Methods(http.MethodPost)
 	router.HandleFunc("/api/register", handler.Register).Methods(http.MethodPost)
 	router.HandleFunc("/api/changePassword", handler.ChangePassword).Methods(http.MethodPost)
 	router.HandleFunc("/api/disableAccount", handler.DisableAccount).Methods(http.MethodPost)
 	router.HandleFunc("/api/deleteAccount", handler.DeleteAccount).Methods(http.MethodPost)
+	router.HandleFunc("/api/changeAvatar", handler.ChangeAvatar).Methods(http.MethodPost)
+
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
+
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
 	router.HandleFunc("/api/postProperties", handler.PostProperties).Methods(http.MethodPost)
 

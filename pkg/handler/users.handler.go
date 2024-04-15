@@ -57,6 +57,7 @@ func Login(writer http.ResponseWriter, request *http.Request) {
     var reponse dto.LoginResponse
     reponse.Token = token
     reponse.Username = user.Username
+    reponse.Avatar = user.Avatar
 	json.NewEncoder(writer).Encode(reponse)
 }
 
@@ -213,4 +214,38 @@ func DeleteAccount(writer http.ResponseWriter, request *http.Request) {
 		return
     }
     json.NewEncoder(writer).Encode(deleteResult)
+}
+
+func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
+    body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+    var avatar dto.ChangeAvatar
+    err = json.Unmarshal(body, &avatar)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+    var userDb dto.User
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Users")
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: avatar.User}}).Decode(&userDb)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
+		return
+	}
+    update := bson.D{{Key: "$set", Value: bson.D{{Key: "avatar", Value: avatar.Avatar}}}}
+    _, err = collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
+    if err != nil {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Update Avatar thất bại" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(avatar)
 }
