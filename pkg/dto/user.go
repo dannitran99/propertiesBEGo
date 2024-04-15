@@ -21,5 +21,11 @@ type ChangePassword struct {
 
 type ChangeAvatar struct {
 	User				string          `json:"user"`
-	Avatar  	string          		`json:"avatar"`
+	Avatar  			string          `json:"avatar"`
+}
+
+type UserInfo struct {
+	Name				string          `json:"name"`
+	PhoneNumber  		string          `json:"phoneNumber"`
+	Email 	  			string			`json:"email"`
 }

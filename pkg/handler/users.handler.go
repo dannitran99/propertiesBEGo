@@ -249,3 +249,24 @@ func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
     }
     json.NewEncoder(writer).Encode(avatar)
 }
+
+func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
+    userName := request.URL.Query().Get("name")
+    var userDb dto.User
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Users")
+	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: userName}}).Decode(&userDb)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
+		return
+	}
+    var userInfo dto.UserInfo
+    userInfo.Name = userDb.FullName
+    userInfo.PhoneNumber = userDb.PhoneNumber
+    userInfo.Email = userDb.Email
+    
+	json.NewEncoder(writer).Encode(userInfo)
+}
