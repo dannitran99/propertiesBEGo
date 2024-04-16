@@ -29,3 +29,10 @@ type UserInfo struct {
 	PhoneNumber  		string          `json:"phoneNumber"`
 	Email 	  			string			`json:"email"`
 }
+
+type UserInfoPost struct {
+	User				string          `json:"user"`
+	Name				string          `json:"name"`
+	PhoneNumber  		string          `json:"phoneNumber"`
+	Email 	  			string			`json:"email"`
+}

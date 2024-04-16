@@ -27,6 +27,7 @@ func main() {
 	router.HandleFunc("/api/deleteAccount", handler.DeleteAccount).Methods(http.MethodPost)
 	router.HandleFunc("/api/changeAvatar", handler.ChangeAvatar).Methods(http.MethodPost)
 	router.HandleFunc("/api/getInfoUser", handler.GetInfoUser).Methods(http.MethodGet)
+	router.HandleFunc("/api/changeInfo", handler.ChangeInfo).Methods(http.MethodPost)
 
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)

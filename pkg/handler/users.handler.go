@@ -270,3 +270,37 @@ func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
     
 	json.NewEncoder(writer).Encode(userInfo)
 }
+
+func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
+    body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+    var userPost dto.UserInfoPost
+    err = json.Unmarshal(body, &userPost)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+    var userDb dto.User
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Users")
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: userPost.User}}).Decode(&userDb)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
+		return
+	}
+    update := bson.D{{Key: "$set", Value: bson.D{{Key: "fullname", Value: userPost.Name},{Key: "phoneNumber", Value: userPost.PhoneNumber},{Key: "email", Value: userPost.Email}}}}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
+    if err != nil {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Sửa thông tin không thành công" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
+}
