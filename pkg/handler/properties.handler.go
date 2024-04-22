@@ -15,7 +15,7 @@ import (
 
 func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
-	var output []dto.Properties
+	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.M{})
@@ -26,8 +26,12 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	}
 	defer cursor.Close(ctx)
 	for cursor.Next(ctx) {
-		var property dto.Properties
+		var property dto.PropertiesInfo
+		var user dto.User
 		cursor.Decode(&property)
+    	collection := utils.MongoConnect("Users")
+		_ = collection.FindOne(ctx, bson.D{{Key: "username", Value: property.Name}}).Decode(&user)
+		property.Avatar = user.Avatar
 		output = append(output, property)
 	}
 	if err := cursor.Err(); err != nil {
