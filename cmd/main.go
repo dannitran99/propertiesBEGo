@@ -34,6 +34,7 @@ func main() {
 
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
 	router.HandleFunc("/api/postProperties", handler.PostProperties).Methods(http.MethodPost)
+	router.HandleFunc("/api/getPostedProperty", handler.GetPostedProperty).Methods(http.MethodGet)
 
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},
