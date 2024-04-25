@@ -33,6 +33,7 @@ func main() {
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
 
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
+	router.HandleFunc("/api/properties/{id}", handler.GetPropertiesDetail).Methods(http.MethodGet)
 	router.HandleFunc("/api/postProperties", handler.PostProperties).Methods(http.MethodPost)
 	router.HandleFunc("/api/getPostedProperty", handler.GetPostedProperty).Methods(http.MethodGet)
 

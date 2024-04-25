@@ -9,16 +9,18 @@ import (
 	"propertiesGo/pkg/utils"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
+	typeProperties := request.URL.Query().Get("type")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.M{})
+	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{{Key: "type", Value: typeProperties}})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -107,3 +109,30 @@ func GetPostedProperty(writer http.ResponseWriter, request *http.Request) {
 	}
 	json.NewEncoder(writer).Encode(output)
 }
+
+func GetPropertiesDetail(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	id, _ := mux.Vars(request)["id"]
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Nguồn không tồn tại" }`))
+		return
+	}
+	var property dto.PropertiesInfo
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Properties")
+	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&property)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Bài đăng không tồn tại" }`))
+		return
+	}
+	var user dto.User
+    collectionUser := utils.MongoConnect("Users")
+	_ = collectionUser.FindOne(ctx, bson.D{{Key: "username", Value: property.User}}).Decode(&user)
+	property.Avatar = user.Avatar
+	json.NewEncoder(writer).Encode(property)
+}
+	
