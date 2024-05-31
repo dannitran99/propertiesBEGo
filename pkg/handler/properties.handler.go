@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,10 +18,21 @@ import (
 func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
 	typeProperties := request.URL.Query().Get("type")
+	categoryProperties := request.URL.Query().Get("category")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{{Key: "type", Value: typeProperties}})
+	filter := bson.D{{Key: "type", Value: typeProperties}}
+	if categoryProperties != "" {
+		categoryfilter := bson.E{
+			Key: "propertyType",
+			Value: bson.M{
+				"$in": strings.Split(categoryProperties, ","),
+			},
+		}
+		filter = append(filter, categoryfilter)
+	}
+	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -77,6 +89,7 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
 		primitive.E{Key: "images", Value: post.Images},
         primitive.E{Key: "name", Value: post.Name},
 		primitive.E{Key: "phoneNumber", Value: post.PhoneNumber},
+		primitive.E{Key: "url", Value: post.Url},
 		primitive.E{Key: "email", Value: post.Email},
         primitive.E{Key: "user", Value: post.User},
 		primitive.E{Key: "createdAt", Value: post.CreatedAt},
