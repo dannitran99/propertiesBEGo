@@ -19,6 +19,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
 	typeProperties := request.URL.Query().Get("type")
 	categoryProperties := request.URL.Query().Get("category")
+	keywordProperties := request.URL.Query().Get("k")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -31,6 +32,10 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 			},
 		}
 		filter = append(filter, categoryfilter)
+	}
+	if keywordProperties != "" {
+		keywordFilter := bson.E{ Key:"title", Value: bson.M{"$regex": keywordProperties, "$options": "i"}}
+		filter = append(filter, keywordFilter)
 	}
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter)
 	if err != nil {
