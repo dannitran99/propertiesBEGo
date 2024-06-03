@@ -48,7 +48,7 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Tài khoản bị vô hiệu hóa" }`))
 		return
     }
-    token, err := utils.CreateToken(user.Username)
+    token, err := utils.CreateToken(userDb.Username)
     if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
@@ -56,8 +56,8 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	}
     var reponse dto.LoginResponse
     reponse.Token = token
-    reponse.Username = user.Username
-    reponse.Avatar = user.Avatar
+    reponse.Username = userDb.Username
+    reponse.Avatar = userDb.Avatar
 	json.NewEncoder(writer).Encode(reponse)
 }
 
