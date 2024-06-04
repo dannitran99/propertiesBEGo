@@ -20,6 +20,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	typeProperties := request.URL.Query().Get("type")
 	categoryProperties := request.URL.Query().Get("category")
 	keywordProperties := request.URL.Query().Get("k")
+	cityQuery := request.URL.Query().Get("city")
+	districtQuery := request.URL.Query().Get("district")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -36,6 +38,19 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if keywordProperties != "" {
 		keywordFilter := bson.E{ Key:"title", Value: bson.M{"$regex": keywordProperties, "$options": "i"}}
 		filter = append(filter, keywordFilter)
+	}
+	if cityQuery != "" {
+		cityFilter := bson.E{Key: "city", Value: cityQuery}
+		filter = append(filter, cityFilter)
+	}
+	if districtQuery != "" {
+		districtfilter := bson.E{
+			Key: "district",
+			Value: bson.M{
+				"$in": strings.Split(districtQuery, ","),
+			},
+		}
+		filter = append(filter, districtfilter)
 	}
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter)
 	if err != nil {
