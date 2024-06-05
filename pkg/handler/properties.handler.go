@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,10 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	keywordProperties := request.URL.Query().Get("k")
 	cityQuery := request.URL.Query().Get("city")
 	districtQuery := request.URL.Query().Get("district")
+	minPriceQuery := request.URL.Query().Get("minp")
+	maxPriceQuery := request.URL.Query().Get("maxp")
+	minSquareQuery := request.URL.Query().Get("mins")
+	maxSquareQuery := request.URL.Query().Get("maxs")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -51,6 +56,38 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 			},
 		}
 		filter = append(filter, districtfilter)
+	}
+	if minPriceQuery != "" {
+		i, err := strconv.Atoi(minPriceQuery)
+		if err != nil {
+			panic(err) // Handle error
+		}
+		minPriceFilter := bson.E{Key: "price",Value: bson.M{"$gte": i*1000000}}
+		filter = append(filter, minPriceFilter)
+	}
+	if maxPriceQuery != "" {
+		i, err := strconv.Atoi(maxPriceQuery)
+		if err != nil {
+			panic(err) // Handle error
+		}
+		maxPriceFilter := bson.E{Key: "price",Value: bson.M{"$lte": i*1000000}}
+		filter = append(filter, maxPriceFilter)
+	}
+	if minSquareQuery != "" {
+		i, err := strconv.Atoi(minSquareQuery)
+		if err != nil {
+			panic(err) // Handle error
+		}
+		minSquareFilter := bson.E{Key: "area",Value: bson.M{"$gte": i}}
+		filter = append(filter, minSquareFilter)
+	}
+	if maxSquareQuery != "" {
+		i, err := strconv.Atoi(maxSquareQuery)
+		if err != nil {
+			panic(err) // Handle error
+		}
+		maxSquareFilter := bson.E{Key: "area",Value: bson.M{"$lte": i}}
+		filter = append(filter, maxSquareFilter)
 	}
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter)
 	if err != nil {
