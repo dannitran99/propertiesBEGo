@@ -14,7 +14,13 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type ResponseData struct {
+	Data  interface{}
+	Total int64
+}
 
 func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
@@ -27,6 +33,17 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	maxPriceQuery := request.URL.Query().Get("maxp")
 	minSquareQuery := request.URL.Query().Get("mins")
 	maxSquareQuery := request.URL.Query().Get("maxs")
+	pageQuery := request.URL.Query().Get("p")
+	limitQuery := request.URL.Query().Get("l")
+	page, err := strconv.Atoi(pageQuery)
+	if err != nil {
+		panic(err) 
+	}
+	pageSize, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		panic(err) 
+	}
+	skip := (page - 1) * pageSize
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -89,7 +106,12 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		maxSquareFilter := bson.E{Key: "area",Value: bson.M{"$lte": i}}
 		filter = append(filter, maxSquareFilter)
 	}
-	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter)
+	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(pageSize))
+	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, filter)
+	if err != nil {
+		panic(err)
+	}
+	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter, findOptions)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -110,7 +132,11 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(writer).Encode(output)
+	responseData := ResponseData{
+		Data:  output,
+		Total: count,
+	}
+	json.NewEncoder(writer).Encode(responseData)
 }
 
 func PostProperties(writer http.ResponseWriter, request *http.Request) {
