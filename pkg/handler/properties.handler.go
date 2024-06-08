@@ -139,6 +139,46 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(writer).Encode(responseData)
 }
 
+func GetAllPropertiesHome(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	pageQuery := request.URL.Query().Get("p")
+	limitQuery := request.URL.Query().Get("l")
+	page, err := strconv.Atoi(pageQuery)
+	if err != nil {
+		panic(err) 
+	}
+	pageSize, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		panic(err) 
+	}
+	skip := (page - 1) * pageSize
+	var output []dto.Properties
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(pageSize))
+	if err != nil {
+		panic(err)
+	}
+	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{}, findOptions)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var property dto.Properties
+		cursor.Decode(&property)
+		output = append(output, property)
+	}
+	if err := cursor.Err(); err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(output)
+}
+
 func PostProperties(writer http.ResponseWriter, request *http.Request) {
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
