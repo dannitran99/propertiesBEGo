@@ -16,6 +16,7 @@ type Properties struct {
 	Description    	string    			`json:"description"` 
 	Area    		int32    			`json:"area"` 
 	Price    		int64    			`json:"price"` 
+	PriceAvg    	float32    			`json:"priceAvg"` 
 	PriceType    	string    			`json:"priceType"` 
 	Images    		[]Image  			`json:"images"` 
 	Url    			string    			`json:"url"` 
@@ -40,6 +41,7 @@ type PropertiesInfo struct {
 	Description    	string    			`json:"description"` 
 	Area    		int32    			`json:"area"` 
 	Price    		int64    			`json:"price"` 
+	PriceAvg    	float32    			`json:"priceAvg"` 
 	PriceType    	string    			`json:"priceType"` 
 	Images    		[]Image  			`json:"images"` 
 	Url    			string    			`json:"url"` 

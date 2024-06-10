@@ -35,6 +35,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	maxSquareQuery := request.URL.Query().Get("maxs")
 	pageQuery := request.URL.Query().Get("p")
 	limitQuery := request.URL.Query().Get("l")
+	sort := request.URL.Query().Get("sort")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
 		panic(err) 
@@ -106,7 +107,36 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		maxSquareFilter := bson.E{Key: "area",Value: bson.M{"$lte": i}}
 		filter = append(filter, maxSquareFilter)
 	}
-	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(pageSize))
+	sortQuery := bson.D{{Key: "_id", Value: -1}}
+	if sort != "" {
+		sortType, err := strconv.Atoi(sort)
+		if err != nil {
+			panic(err) // Handle error
+		}
+		switch sortType {
+            case 1:
+				hasPrice := bson.E{Key: "price",Value: bson.M{"$ne": 0}}
+				filter = append(filter, hasPrice)
+				sortQuery = bson.D{{Key: "price", Value: 1}}
+            case 2:
+				hasPrice := bson.E{Key: "price",Value: bson.M{"$ne": 0}}
+				filter = append(filter, hasPrice)
+				sortQuery = bson.D{{Key: "price", Value: -1}}
+			case 3:
+				hasPriceAvg := bson.E{Key: "priceAvg",Value: bson.M{"$ne": 0}}
+				filter = append(filter, hasPriceAvg)
+				sortQuery = bson.D{{Key: "priceAvg", Value: 1}}
+            case 4:
+				hasPriceAvg := bson.E{Key: "priceAvg",Value: bson.M{"$ne": 0}}
+				filter = append(filter, hasPriceAvg)
+				sortQuery = bson.D{{Key: "priceAvg", Value: -1}}
+            case 5:
+				sortQuery = bson.D{{Key: "area", Value: 1}}
+            case 6:
+				sortQuery = bson.D{{Key: "area", Value: -1}}
+        }
+	}
+	findOptions := options.Find().SetSort(sortQuery).SetSkip(int64(skip)).SetLimit(int64(pageSize))
 	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, filter)
 	if err != nil {
 		panic(err)
@@ -195,6 +225,16 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Properties")
+	var price int64
+	var priceAvg float32
+	switch post.PriceType {
+		case "VND":
+			price = post.Price
+			priceAvg = float32(post.Price) / float32(post.Area)
+		case "Giá / m²":
+			price = int64(post.Price) * int64(post.Area)
+			priceAvg = float32(post.Price)
+	}
 	doc := bson.D{
         primitive.E{Key: "type", Value: post.Type},
 		primitive.E{Key: "propertyType", Value: post.PropertyType},
@@ -207,8 +247,9 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
         primitive.E{Key: "title", Value: post.Title},
 		primitive.E{Key: "description", Value: post.Description},
         primitive.E{Key: "area", Value: post.Area},
-		primitive.E{Key: "price", Value: post.Price},
+		primitive.E{Key: "price", Value: price},
         primitive.E{Key: "priceType", Value: post.PriceType},
+        primitive.E{Key: "priceAvg", Value: priceAvg},
 		primitive.E{Key: "images", Value: post.Images},
         primitive.E{Key: "name", Value: post.Name},
 		primitive.E{Key: "phoneNumber", Value: post.PhoneNumber},
