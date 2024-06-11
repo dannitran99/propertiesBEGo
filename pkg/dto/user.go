@@ -24,6 +24,12 @@ type ChangeAvatar struct {
 	Avatar  			string          `json:"avatar"`
 }
 
+type UserRelated struct {
+	Username			string          `json:"username"`
+	FullName			string			`json:"fullname"`
+	Avatar  			string          `json:"avatar"`
+}
+
 type UserInfo struct {
 	Name				string          `json:"name"`
 	PhoneNumber  		string          `json:"phoneNumber"`

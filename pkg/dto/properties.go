@@ -46,7 +46,7 @@ type PropertiesInfo struct {
 	Images    		[]Image  			`json:"images"` 
 	Url    			string    			`json:"url"` 
 	Name    		string    			`json:"name"`
-	Avatar			string    			`json:"avatar"`
+	RelatedUser		[]UserRelated    	`json:"relatedUser"`
 	PhoneNumber    	string    			`json:"phoneNumber"` 
 	Email    		string    			`json:"email"` 
 	User			string				`json:"user"` 

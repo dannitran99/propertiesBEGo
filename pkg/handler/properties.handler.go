@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -136,12 +137,24 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 				sortQuery = bson.D{{Key: "area", Value: -1}}
         }
 	}
-	findOptions := options.Find().SetSort(sortQuery).SetSkip(int64(skip)).SetLimit(int64(pageSize))
 	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, filter)
 	if err != nil {
 		panic(err)
 	}
-	cursor, err := utils.MongoConnect("Properties").Find(ctx, filter, findOptions)
+	matchStage := bson.D{{Key: "$match", Value: filter}}
+	sortStage := bson.D{{Key: "$sort", Value: sortQuery}}
+	limitStage := bson.D{{Key: "$limit", Value: pageSize}}
+	skipStage := bson.D{{Key: "$skip", Value: skip}}
+	cursor, err := utils.MongoConnect("Properties").Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, skipStage, limitStage , 
+		bson.D{
+			{Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "user",
+				"foreignField": "username",
+				"as":           "relatedUser",
+			}},
+		},
+	})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -150,11 +163,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	defer cursor.Close(ctx)
 	for cursor.Next(ctx) {
 		var property dto.PropertiesInfo
-		var user dto.User
 		cursor.Decode(&property)
-    	collection := utils.MongoConnect("Users")
-		_ = collection.FindOne(ctx, bson.D{{Key: "username", Value: property.User}}).Decode(&user)
-		property.Avatar = user.Avatar
 		output = append(output, property)
 	}
 	if err := cursor.Err(); err != nil {
@@ -289,7 +298,7 @@ func GetPostedProperty(writer http.ResponseWriter, request *http.Request) {
 
 func GetPropertiesDetail(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
-	id, _ := mux.Vars(request)["id"]
+	id := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -300,16 +309,24 @@ func GetPropertiesDetail(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Properties")
-	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&property)
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: objID}}}}, 
+		{
+			{Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "user",
+				"foreignField": "username",
+				"as":           "relatedUser",
+			}},
+		},
+	})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Bài đăng không tồn tại" }`))
 		return
 	}
-	var user dto.User
-    collectionUser := utils.MongoConnect("Users")
-	_ = collectionUser.FindOne(ctx, bson.D{{Key: "username", Value: property.User}}).Decode(&user)
-	property.Avatar = user.Avatar
+	if cursor.Next(ctx) {
+		cursor.Decode(&property)
+	}
 	json.NewEncoder(writer).Encode(property)
 }
 	
