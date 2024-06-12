@@ -20,6 +20,8 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homeLink)
+	
+	router.HandleFunc("/api/checkVerifyToken", middleware.VerifyJWT(handler.CheckVerifyToken)).Methods(http.MethodPost)
 
 	router.HandleFunc("/api/login", handler.Login).Methods(http.MethodPost)
 	router.HandleFunc("/api/register", handler.Register).Methods(http.MethodPost)

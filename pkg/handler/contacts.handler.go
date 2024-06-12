@@ -57,6 +57,10 @@ func GetContactUser(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Contacts")
-	collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&contactDb)
+	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&contactDb)
+	if err != nil {
+		writer.Write([]byte(`{ "message": "no data" }`))
+		return
+	}
 	json.NewEncoder(writer).Encode(contactDb)
 }

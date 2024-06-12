@@ -15,7 +15,7 @@ import (
 
 func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
-	var people []dto.News
+	var new []dto.News
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cursor, err := utils.MongoConnect("News").Find(ctx, bson.M{})
@@ -26,16 +26,16 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	}
 	defer cursor.Close(ctx)
 	for cursor.Next(ctx) {
-		var person dto.News
-		cursor.Decode(&person)
-		people = append(people, person)
+		var newItem dto.News
+		cursor.Decode(&newItem)
+		new = append(new, newItem)
 	}
 	if err := cursor.Err(); err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(writer).Encode(people)
+	json.NewEncoder(writer).Encode(new)
 }
 
 func GetNewsByID(writer http.ResponseWriter, request *http.Request) {

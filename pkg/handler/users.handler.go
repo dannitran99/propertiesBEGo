@@ -13,6 +13,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+
+func CheckVerifyToken(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username").(string)
+    token, err := utils.CreateToken(username)
+    if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(token)
+}
+
 func Login(writer http.ResponseWriter, request *http.Request) {
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
