@@ -100,12 +100,14 @@ func Register(writer http.ResponseWriter, request *http.Request) {
         primitive.E{Key: "fullname", Value: ""},
         primitive.E{Key: "avatar", Value: ""},
         primitive.E{Key: "phoneNumber", Value: ""},
+        primitive.E{Key: "role", Value: "user"},
     }
     result, _ := collection.InsertOne(ctx, doc)
 	json.NewEncoder(writer).Encode(result)
 }
 
 func ChangePassword(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
         http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
@@ -122,7 +124,7 @@ func ChangePassword(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: newPass.User}}).Decode(&userDb)
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -145,7 +147,8 @@ func ChangePassword(writer http.ResponseWriter, request *http.Request) {
 }
 
 func DisableAccount(writer http.ResponseWriter, request *http.Request) {
-     body, err := ioutil.ReadAll(request.Body)
+	username := request.Context().Value("username")
+    body, err := ioutil.ReadAll(request.Body)
     if err != nil {
         http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
         return
@@ -161,7 +164,7 @@ func DisableAccount(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: newPass.User}}).Decode(&userDb)
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -184,23 +187,12 @@ func DisableAccount(writer http.ResponseWriter, request *http.Request) {
 }
 
 func DeleteAccount(writer http.ResponseWriter, request *http.Request) {
-     body, err := ioutil.ReadAll(request.Body)
-    if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
-    }
-    defer request.Body.Close()
-    var newPass dto.ChangePassword
-    err = json.Unmarshal(body, &newPass)
-    if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
-    }
+	username := request.Context().Value("username")
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: newPass.User}}).Decode(&userDb)
+	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -217,6 +209,7 @@ func DeleteAccount(writer http.ResponseWriter, request *http.Request) {
 }
 
 func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
         http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
@@ -233,7 +226,7 @@ func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: avatar.User}}).Decode(&userDb)
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -251,12 +244,12 @@ func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
 }
 
 func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
-    userName := request.URL.Query().Get("name")
+	username := request.Context().Value("username")
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: userName}}).Decode(&userDb)
+	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -272,13 +265,14 @@ func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
 }
 
 func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
         http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
         return
     }
     defer request.Body.Close()
-    var userPost dto.UserInfoPost
+    var userPost dto.UserInfo
     err = json.Unmarshal(body, &userPost)
     if err != nil {
         http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
@@ -288,7 +282,7 @@ func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
     collection := utils.MongoConnect("Users")
-	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: userPost.User}}).Decode(&userDb)
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)

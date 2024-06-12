@@ -11,16 +11,15 @@ type User struct {
 	Email 	  	string			   	`json:"email"`
 	Active 	  	bool			   	`json:"active"`
 	PhoneNumber string				`json:"phoneNumber"`
+	Role 		string				`json:"role"`
 }
 
 type ChangePassword struct {
-	User				string          `json:"user"`
 	CurrentPassword  	string          `json:"currentPassword"`
 	NewPassword  		string          `json:"newPassword"`
 }
 
 type ChangeAvatar struct {
-	User				string          `json:"user"`
 	Avatar  			string          `json:"avatar"`
 }
 
@@ -31,13 +30,6 @@ type UserRelated struct {
 }
 
 type UserInfo struct {
-	Name				string          `json:"name"`
-	PhoneNumber  		string          `json:"phoneNumber"`
-	Email 	  			string			`json:"email"`
-}
-
-type UserInfoPost struct {
-	User				string          `json:"user"`
 	Name				string          `json:"name"`
 	PhoneNumber  		string          `json:"phoneNumber"`
 	Email 	  			string			`json:"email"`

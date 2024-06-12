@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"propertiesGo/pkg/handler"
+	"propertiesGo/pkg/middleware"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -22,12 +23,12 @@ func main() {
 
 	router.HandleFunc("/api/login", handler.Login).Methods(http.MethodPost)
 	router.HandleFunc("/api/register", handler.Register).Methods(http.MethodPost)
-	router.HandleFunc("/api/changePassword", handler.ChangePassword).Methods(http.MethodPost)
-	router.HandleFunc("/api/disableAccount", handler.DisableAccount).Methods(http.MethodPost)
-	router.HandleFunc("/api/deleteAccount", handler.DeleteAccount).Methods(http.MethodPost)
-	router.HandleFunc("/api/changeAvatar", handler.ChangeAvatar).Methods(http.MethodPost)
-	router.HandleFunc("/api/getInfoUser", handler.GetInfoUser).Methods(http.MethodGet)
-	router.HandleFunc("/api/changeInfo", handler.ChangeInfo).Methods(http.MethodPost)
+	router.HandleFunc("/api/changePassword", middleware.VerifyJWT(handler.ChangePassword)).Methods(http.MethodPost)
+	router.HandleFunc("/api/disableAccount", middleware.VerifyJWT(handler.DisableAccount)).Methods(http.MethodPost)
+	router.HandleFunc("/api/deleteAccount", middleware.VerifyJWT(handler.DeleteAccount)).Methods(http.MethodPost)
+	router.HandleFunc("/api/changeAvatar", middleware.VerifyJWT(handler.ChangeAvatar)).Methods(http.MethodPost)
+	router.HandleFunc("/api/getInfoUser", middleware.VerifyJWT(handler.GetInfoUser)).Methods(http.MethodGet)
+	router.HandleFunc("/api/changeInfo", middleware.VerifyJWT(handler.ChangeInfo)).Methods(http.MethodPost)
 
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
@@ -35,12 +36,17 @@ func main() {
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
 	router.HandleFunc("/api/propertiesMain", handler.GetAllPropertiesHome).Methods(http.MethodGet)
 	router.HandleFunc("/api/properties/{id}", handler.GetPropertiesDetail).Methods(http.MethodGet)
-	router.HandleFunc("/api/postProperties", handler.PostProperties).Methods(http.MethodPost)
-	router.HandleFunc("/api/getPostedProperty", handler.GetPostedProperty).Methods(http.MethodGet)
+	router.HandleFunc("/api/postProperties", middleware.VerifyJWT(handler.PostProperties)).Methods(http.MethodPost)
+	router.HandleFunc("/api/getPostedProperty", middleware.VerifyJWT(handler.GetPostedProperty)).Methods(http.MethodGet)
 
+	router.HandleFunc("/api/registerAgency", middleware.VerifyJWT(handler.RegisterAgency)).Methods(http.MethodPost)
+	router.HandleFunc("/api/getContactUser", middleware.VerifyJWT(handler.GetContactUser)).Methods(http.MethodGet)
+	
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},
         AllowCredentials: true,
+		AllowedMethods: []string{"POST", "GET", "DELETE"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
     })
 
     handler := c.Handler(router)

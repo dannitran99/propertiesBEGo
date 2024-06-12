@@ -219,6 +219,7 @@ func GetAllPropertiesHome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func PostProperties(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
         http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
@@ -264,7 +265,7 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
 		primitive.E{Key: "phoneNumber", Value: post.PhoneNumber},
 		primitive.E{Key: "url", Value: post.Url},
 		primitive.E{Key: "email", Value: post.Email},
-        primitive.E{Key: "user", Value: post.User},
+        primitive.E{Key: "user", Value: username},
 		primitive.E{Key: "createdAt", Value: post.CreatedAt},
     }
     result, _ := collection.InsertOne(ctx, doc)
@@ -272,11 +273,11 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
 }
 
 func GetPostedProperty(writer http.ResponseWriter, request *http.Request) {
-	userName := request.URL.Query().Get("name")
+	username := request.Context().Value("username")
 	var output []dto.PropertiesInfo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{{Key: "user", Value: userName}})
+	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{{Key: "user", Value: username}})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
