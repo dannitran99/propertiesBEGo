@@ -27,7 +27,9 @@ func VerifyJWT(next http.HandlerFunc) http.HandlerFunc {
             http.Error(w, "Unauthorized", http.StatusUnauthorized)
             return
         }
-		ctx := context.WithValue(r.Context(), "username", claims["userId"].(string))
+        ctx := r.Context()
+		ctx = context.WithValue(ctx, "username", claims["userId"].(string))
+		ctx = context.WithValue(ctx, "role", claims["role"].(string))
         // Token is valid, proceed to the next handler
         next.ServeHTTP(w, r.WithContext(ctx))
     }

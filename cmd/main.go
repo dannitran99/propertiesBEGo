@@ -44,6 +44,9 @@ func main() {
 	router.HandleFunc("/api/registerAgency", middleware.VerifyJWT(handler.RegisterAgency)).Methods(http.MethodPost)
 	router.HandleFunc("/api/getContactUser", middleware.VerifyJWT(handler.GetContactUser)).Methods(http.MethodGet)
 	
+	router.HandleFunc("/api/admin/getRequestAgency", middleware.VerifyJWT(handler.GetRequestAgency)).Methods(http.MethodGet)
+	router.HandleFunc("/api/admin/getRequestDisableAccount", middleware.VerifyJWT(handler.GetRequestDisableAccount)).Methods(http.MethodGet)
+	
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},
         AllowCredentials: true,

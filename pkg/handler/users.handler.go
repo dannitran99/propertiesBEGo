@@ -16,7 +16,8 @@ import (
 
 func CheckVerifyToken(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username").(string)
-    token, err := utils.CreateToken(username)
+	role := request.Context().Value("role").(string)
+    token, err := utils.CreateToken(username,role)
     if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
@@ -55,12 +56,12 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Sai mật khẩu" }`))
 		return
     }
-    if !userDb.Active {
+    if userDb.Status == "disabled" || userDb.Status == "delete-pending"{
         writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Tài khoản bị vô hiệu hóa" }`))
 		return
     }
-    token, err := utils.CreateToken(userDb.Username)
+    token, err := utils.CreateToken(userDb.Username, userDb.Role)
     if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
@@ -108,7 +109,7 @@ func Register(writer http.ResponseWriter, request *http.Request) {
         primitive.E{Key: "username", Value: user.Username}, 
         primitive.E{Key: "password", Value: utils.SHA1(user.Password)},
         primitive.E{Key: "email", Value: user.Email},
-        primitive.E{Key: "active", Value: true},
+        primitive.E{Key: "status", Value: "active"},
         primitive.E{Key: "fullname", Value: ""},
         primitive.E{Key: "avatar", Value: ""},
         primitive.E{Key: "phoneNumber", Value: ""},
@@ -188,7 +189,7 @@ func DisableAccount(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Mật khẩu cũ không đúng" }`))
 		return
     }
-    update := bson.D{{Key: "$set", Value: bson.D{{Key: "active", Value: false}}}}
+    update := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: "disabled"}}}}
     result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
     if err != nil {
         writer.WriteHeader(http.StatusInternalServerError)
@@ -211,13 +212,21 @@ func DeleteAccount(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
 		return
 	}
-    deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}})
-    if deleteResult.DeletedCount == 0 {
+    update := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: "delete-pending"}}}}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
+    if err != nil {
         writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
+		writer.Write([]byte(`{ "message": "Yêu cầu xóa không thành công" }`))
 		return
     }
-    json.NewEncoder(writer).Encode(deleteResult)
+    json.NewEncoder(writer).Encode(result)
+    // deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}})
+    // if deleteResult.DeletedCount == 0 {
+    //     writer.WriteHeader(http.StatusInternalServerError)
+	// 	writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
+	// 	return
+    // }
+    // json.NewEncoder(writer).Encode(deleteResult)
 }
 
 func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {

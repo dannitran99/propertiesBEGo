@@ -41,6 +41,7 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 	}
 	doc := bson.D{
         primitive.E{Key: "username", Value: username}, 
+        primitive.E{Key: "type", Value: "personal"}, 
         primitive.E{Key: "name", Value: contact.Name},
         primitive.E{Key: "avatar", Value: contact.Avatar},
         primitive.E{Key: "phoneNumber", Value: contact.PhoneNumber},

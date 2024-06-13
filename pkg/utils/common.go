@@ -15,10 +15,11 @@ func SHA1(text string) string {
 	return hex.EncodeToString(algorithm.Sum(nil))
 }
 
-func CreateToken(userId string) (string, error) {
+func CreateToken(userId string, role string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["userId"] = userId
+	claims["role"] = role
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	jwtKey := os.Getenv("JWT_SECRET_KEY")
 	tokenString, err := token.SignedString([]byte(jwtKey))
