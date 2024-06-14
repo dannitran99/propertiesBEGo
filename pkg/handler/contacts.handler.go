@@ -65,3 +65,17 @@ func GetContactUser(writer http.ResponseWriter, request *http.Request) {
 	}
 	json.NewEncoder(writer).Encode(contactDb)
 }
+
+func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	collection := utils.MongoConnect("Contacts")
+    deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "username", Value: username}})
+    if deleteResult.DeletedCount == 0 {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(deleteResult)
+}
