@@ -46,6 +46,7 @@ func main() {
 	
 	router.HandleFunc("/api/admin/getRequestAgency", middleware.VerifyJWT(handler.GetRequestAgency)).Methods(http.MethodGet)
 	router.HandleFunc("/api/admin/getRequestDisableAccount", middleware.VerifyJWT(handler.GetRequestDisableAccount)).Methods(http.MethodGet)
+	router.HandleFunc("/api/admin/acceptRequestAgency", middleware.VerifyJWT(handler.AcceptRequestAgency)).Methods(http.MethodPost)
 	
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},

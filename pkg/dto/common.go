@@ -5,3 +5,7 @@ type LoginResponse struct {
 	Username string `json:"username"`
 	Avatar   string `json:"avatar"`
 }
+
+type ID struct {
+	Username string `json:"username"`
+}
