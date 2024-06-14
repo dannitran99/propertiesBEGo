@@ -51,7 +51,7 @@ func GetRequestDisableAccount(writer http.ResponseWriter, request *http.Request)
 		writer.Write([]byte(`{ "message": "Không có quyền truy cập" }`))
 		return
     }
-	var users []dto.UserInfo
+	var users []dto.UserGet
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cursor, err := utils.MongoConnect("Users").Find(ctx, bson.D{{Key: "status", Value: "delete-pending"}})
@@ -62,7 +62,7 @@ func GetRequestDisableAccount(writer http.ResponseWriter, request *http.Request)
 	}
 	defer cursor.Close(ctx)
 	for cursor.Next(ctx) {
-		var user dto.UserInfo
+		var user dto.UserGet
 		cursor.Decode(&user)
 		users = append(users, user)
 	}
@@ -74,9 +74,8 @@ func GetRequestDisableAccount(writer http.ResponseWriter, request *http.Request)
 	json.NewEncoder(writer).Encode(users)
 }
 
-func AcceptRequestAgency(writer http.ResponseWriter, request *http.Request) {
+func ResponseRequestAgency(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
-	username := request.Context().Value("username")
 	role := request.Context().Value("role")
 	if role != "admin" {
         writer.WriteHeader(http.StatusInternalServerError)
@@ -97,21 +96,88 @@ func AcceptRequestAgency(writer http.ResponseWriter, request *http.Request) {
     }
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
-    collectionUser := utils.MongoConnect("Users")
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "role", Value: "agency"}}}}
-    _, err = collectionUser.UpdateOne(ctx, bson.D{{Key: "username", Value: username}}, update)
-    if err != nil {
-        writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Đổi role không thành công" }`))
-		return
-    }
+	if userId.Action == "active" {
+		collectionUser := utils.MongoConnect("Users")
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "role", Value: "agency"}}}}
+		_, err = collectionUser.UpdateOne(ctx, bson.D{{Key: "username", Value: userId.Username}}, update)
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			writer.Write([]byte(`{ "message": "Đổi role không thành công" }`))
+			return
+		}
+	}
 	collectionContact := utils.MongoConnect("Contacts")
-	updateContact := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: "active"}}}}
-    results, err := collectionContact.UpdateOne(ctx, bson.D{{Key: "username", Value: username}}, updateContact)
+	updateContact := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: userId.Action}}}}
+    results, err := collectionContact.UpdateOne(ctx, bson.D{{Key: "username", Value: userId.Username}}, updateContact)
     if err != nil {
         writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Đổi role không thành công" }`))
 		return
     }
 	json.NewEncoder(writer).Encode(results)
+}
+
+func AdminDeleteAccount(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	role := request.Context().Value("role")
+	if role != "admin" {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Không có quyền truy cập" }`))
+		return
+    }
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+	var userId dto.ID
+    err = json.Unmarshal(body, &userId)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	collection := utils.MongoConnect("Users")
+    deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "username", Value: userId.Username}})
+    if deleteResult.DeletedCount == 0 {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(deleteResult)
+}
+
+func CancelDeleteAccount(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	role := request.Context().Value("role")
+	if role != "admin" {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Không có quyền truy cập" }`))
+		return
+    }
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+	var userId dto.ID
+    err = json.Unmarshal(body, &userId)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	collection := utils.MongoConnect("Users")
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: "active"}}}}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "username", Value: userId.Username}}, update)
+    if err != nil {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Khôi phục thất bại" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
 }

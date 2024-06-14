@@ -14,6 +14,15 @@ type User struct {
 	Role 		string				`json:"role"`
 }
 
+type UserGet struct {
+	ID        	primitive.ObjectID 	`bson:"_id"`
+	Username  	string             	`json:"username"`
+	FullName	string				`json:"fullname"`
+	Avatar		string				`json:"avatar"`
+	Email 	  	string			   	`json:"email"`
+	PhoneNumber string				`json:"phoneNumber"`
+}
+
 type ChangePassword struct {
 	CurrentPassword  	string          `json:"currentPassword"`
 	NewPassword  		string          `json:"newPassword"`

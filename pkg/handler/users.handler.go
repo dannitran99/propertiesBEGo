@@ -220,13 +220,6 @@ func DeleteAccount(writer http.ResponseWriter, request *http.Request) {
 		return
     }
     json.NewEncoder(writer).Encode(result)
-    // deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}})
-    // if deleteResult.DeletedCount == 0 {
-    //     writer.WriteHeader(http.StatusInternalServerError)
-	// 	writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
-	// 	return
-    // }
-    // json.NewEncoder(writer).Encode(deleteResult)
 }
 
 func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {

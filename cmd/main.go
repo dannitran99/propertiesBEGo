@@ -46,7 +46,9 @@ func main() {
 	
 	router.HandleFunc("/api/admin/getRequestAgency", middleware.VerifyJWT(handler.GetRequestAgency)).Methods(http.MethodGet)
 	router.HandleFunc("/api/admin/getRequestDisableAccount", middleware.VerifyJWT(handler.GetRequestDisableAccount)).Methods(http.MethodGet)
-	router.HandleFunc("/api/admin/acceptRequestAgency", middleware.VerifyJWT(handler.AcceptRequestAgency)).Methods(http.MethodPost)
+	router.HandleFunc("/api/admin/responseRequestAgency", middleware.VerifyJWT(handler.ResponseRequestAgency)).Methods(http.MethodPost)
+	router.HandleFunc("/api/admin/deleteAccount", middleware.VerifyJWT(handler.AdminDeleteAccount)).Methods(http.MethodPost)
+	router.HandleFunc("/api/admin/cancelDeleteAccount", middleware.VerifyJWT(handler.CancelDeleteAccount)).Methods(http.MethodPost)
 	
 	c := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:8080"},
