@@ -44,6 +44,7 @@ func main() {
 	router.HandleFunc("/api/registerAgency", middleware.VerifyJWT(handler.RegisterAgency)).Methods(http.MethodPost)
 	router.HandleFunc("/api/getContactUser", middleware.VerifyJWT(handler.GetContactUser)).Methods(http.MethodGet)
 	router.HandleFunc("/api/deleteRequestAgency", middleware.VerifyJWT(handler.DeleteRequestAgency)).Methods(http.MethodDelete)
+	router.HandleFunc("/api/getAllContact", handler.GetAllContact).Methods(http.MethodGet)
 	
 	router.HandleFunc("/api/admin/getRequestAgency", middleware.VerifyJWT(handler.GetRequestAgency)).Methods(http.MethodGet)
 	router.HandleFunc("/api/admin/getRequestDisableAccount", middleware.VerifyJWT(handler.GetRequestDisableAccount)).Methods(http.MethodGet)

@@ -41,7 +41,7 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 	}
 	doc := bson.D{
         primitive.E{Key: "username", Value: username}, 
-        primitive.E{Key: "type", Value: "personal"}, 
+        primitive.E{Key: "type", Value: "ca-nhan"}, 
         primitive.E{Key: "name", Value: contact.Name},
         primitive.E{Key: "avatar", Value: contact.Avatar},
         primitive.E{Key: "phoneNumber", Value: contact.PhoneNumber},
@@ -78,4 +78,32 @@ func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
 		return
     }
     json.NewEncoder(writer).Encode(deleteResult)
+}
+
+func GetAllContact(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	typeContact := request.URL.Query().Get("contactType")
+	var output []dto.Contacts
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	filter := bson.D{{Key: "type", Value: typeContact}}
+	filter = append(filter, bson.E{ Key: "status", Value: "active" })
+	cursor, err := utils.MongoConnect("Contacts").Find(ctx, filter)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var contact dto.Contacts
+		cursor.Decode(&contact)
+		output = append(output, contact)
+	}
+	if err := cursor.Err(); err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(output)
 }
