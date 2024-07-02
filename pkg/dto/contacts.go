@@ -9,6 +9,19 @@ type Contacts struct {
 	Name  	  		string             	`json:"name"`
 	Avatar 	  		string             	`json:"avatar"`
 	PhoneNumber    	string    			`json:"phoneNumber"`
+	City    		string    			`json:"city"`
+	District    	string    			`json:"district"`
+	Ward    		string    			`json:"ward"`
+	Street    		string    			`json:"street"`
+	Description    	string    			`json:"description"`
+	Scope    		[]Scope   			`json:"scope"`
 	Status 			string    			`json:"status"`
 	CreatedAt 		string  			`json:"createdAt"`
+}
+
+type Scope struct {
+	TypeProperty    string    			`json:"typeProperty"`
+	Type    		string    			`json:"type"`
+	City    		string    			`json:"city"`
+	District    	string    			`json:"district"`
 }

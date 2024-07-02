@@ -9,6 +9,7 @@ import (
 	"propertiesGo/pkg/utils"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -39,17 +40,68 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "Không thể tạo thêm request" }`))
 		return
 	}
+	scope := []dto.Scope{{
+		TypeProperty:"",
+		Type:"",
+		City:"",
+		District:"",
+	}}
 	doc := bson.D{
         primitive.E{Key: "username", Value: username}, 
         primitive.E{Key: "type", Value: "ca-nhan"}, 
         primitive.E{Key: "name", Value: contact.Name},
         primitive.E{Key: "avatar", Value: contact.Avatar},
         primitive.E{Key: "phoneNumber", Value: contact.PhoneNumber},
+        primitive.E{Key: "city", Value: ""},
+        primitive.E{Key: "district", Value: ""},
+        primitive.E{Key: "ward", Value: ""},
+        primitive.E{Key: "street", Value: ""},
+        primitive.E{Key: "description", Value: ""},
+        primitive.E{Key: "scope", Value: scope},
         primitive.E{Key: "status", Value: "pending"},
 		primitive.E{Key: "createdAt", Value: contact.CreatedAt},
     }
     result, _ := collection.InsertOne(ctx, doc)
 	json.NewEncoder(writer).Encode(result)
+}
+
+func UpdateAgency(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+    var contact dto.Contacts
+    err = json.Unmarshal(body, &contact)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Contacts")
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "avatar", Value: contact.Avatar},
+			{Key: "name", Value: contact.Name},
+			{Key: "phoneNumber", Value: contact.PhoneNumber},
+			{Key: "city", Value: contact.City},
+			{Key: "district", Value: contact.District},
+			{Key: "ward", Value: contact.Ward},
+			{Key: "street", Value: contact.Street},
+			{Key: "description", Value: contact.Description},
+			{Key: "scope", Value: contact.Scope},
+		}},
+	}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "username", Value: username}}, update)
+    if err != nil {
+        writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Sửa thông tin không thành công" }`))
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
 }
 
 func GetContactUser(writer http.ResponseWriter, request *http.Request) {
@@ -64,6 +116,27 @@ func GetContactUser(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	json.NewEncoder(writer).Encode(contactDb)
+}
+
+func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	var contact dto.Contacts
+	id, _ := mux.Vars(request)["id"]
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+	panic(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := utils.MongoConnect("Contacts")
+	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&contact)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(contact)
 }
 
 func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
