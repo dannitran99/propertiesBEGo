@@ -36,6 +36,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	maxSquareQuery := request.URL.Query().Get("maxs")
 	pageQuery := request.URL.Query().Get("p")
 	limitQuery := request.URL.Query().Get("l")
+	filterVerify := request.URL.Query().Get("f")
 	sort := request.URL.Query().Get("sort")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
@@ -107,6 +108,32 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		}
 		maxSquareFilter := bson.E{Key: "area",Value: bson.M{"$lte": i}}
 		filter = append(filter, maxSquareFilter)
+	}
+	if filterVerify == "agency" {
+		cursor, err := utils.MongoConnect("Contacts").Find(ctx, bson.D{{ Key: "status", Value: "active" }})
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+			return
+		}
+		defer cursor.Close(ctx)
+		var results []bson.M
+		var user []string
+		if err := cursor.All(context.TODO(), &results); err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+			return
+		}
+		for _, result := range results {
+			user = append(user, result["username"].(string))
+		}
+		agencyfilter := bson.E{
+			Key: "user",
+			Value: bson.M{
+				"$in": user,
+			},
+		}
+		filter = append(filter, agencyfilter)
 	}
 	sortQuery := bson.D{{Key: "_id", Value: -1}}
 	if sort != "" {

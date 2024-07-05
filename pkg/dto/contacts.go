@@ -19,6 +19,11 @@ type Contacts struct {
 	CreatedAt 		string  			`json:"createdAt"`
 }
 
+type AgencyRelated struct {
+	Name  	  		string             	`json:"name"`
+	PhoneNumber    	string    			`json:"phoneNumber"`
+}
+
 type Scope struct {
 	TypeProperty    string    			`json:"typeProperty"`
 	Type    		string    			`json:"type"`

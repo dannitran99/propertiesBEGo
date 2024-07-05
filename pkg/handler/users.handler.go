@@ -11,6 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 
@@ -259,23 +260,36 @@ func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
 
 func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
-    var userDb dto.User
+    var userDb []dto.UserInfo
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
-    collection := utils.MongoConnect("Users")
-	err := collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&userDb)
-
+    cursor, err := utils.MongoConnect("Users").Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: bson.D{{Key: "username", Value: username}}}}, 
+		bson.D{
+			{Key: "$lookup", Value: bson.M{
+				"from":         "Contacts",
+				"localField":   "username",
+				"foreignField": "username",
+				"as":           "agencyInfo",
+			}},
+		},
+	})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "Tài khoản không tồn tại" }`))
 		return
 	}
-    var userInfo dto.UserInfo
-    userInfo.Name = userDb.FullName
-    userInfo.PhoneNumber = userDb.PhoneNumber
-    userInfo.Email = userDb.Email
-    
-	json.NewEncoder(writer).Encode(userInfo)
+    defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var user dto.UserInfo
+		cursor.Decode(&user)
+		userDb = append(userDb, user)
+	}
+	if err := cursor.Err(); err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(writer).Encode(userDb)
 }
 
 func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
@@ -286,7 +300,7 @@ func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
         return
     }
     defer request.Body.Close()
-    var userPost dto.UserInfo
+    var userPost dto.UserInfoUpdate
     err = json.Unmarshal(body, &userPost)
     if err != nil {
         http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)

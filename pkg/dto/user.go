@@ -39,6 +39,13 @@ type UserRelated struct {
 }
 
 type UserInfo struct {
+	Fullname			string          `json:"fullname"`
+	PhoneNumber  		string          `json:"phoneNumber"`
+	Email 	  			string			`json:"email"`
+	AgencyInfo			[]AgencyRelated `json:"agencyInfo"`
+}
+
+type UserInfoUpdate struct {
 	Name				string          `json:"name"`
 	PhoneNumber  		string          `json:"phoneNumber"`
 	Email 	  			string			`json:"email"`
