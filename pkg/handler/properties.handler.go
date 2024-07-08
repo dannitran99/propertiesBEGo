@@ -18,11 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ResponseData struct {
-	Data  interface{}
-	Total int64
-}
-
 func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
 	typeProperties := request.URL.Query().Get("type")
@@ -198,7 +193,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	responseData := ResponseData{
+	responseData := dto.ResponseData{
 		Data:  output,
 		Total: count,
 	}

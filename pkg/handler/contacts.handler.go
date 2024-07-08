@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 
@@ -120,6 +122,17 @@ func GetContactUser(writer http.ResponseWriter, request *http.Request) {
 
 func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
+	pageQuery := request.URL.Query().Get("p")
+	limitQuery := request.URL.Query().Get("l")
+	page, err := strconv.Atoi(pageQuery)
+	if err != nil {
+		panic(err) 
+	}
+	pageSize, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		panic(err) 
+	}
+	skip := (page - 1) * pageSize
 	var contact dto.Contacts
 	id, _ := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -130,13 +143,44 @@ func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 	defer cancel()
 	collection := utils.MongoConnect("Contacts")
 	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&contact)
-
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(writer).Encode(contact)
+	matchFilter :=  bson.D{{Key: "user", Value: contact.Username}}
+	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, matchFilter)
+	if err != nil {
+		panic(err)
+	}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "_id", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageSize}}
+	skipStage := bson.D{{Key: "$skip", Value: skip}}
+	var properties []dto.RelatedProperties
+	collectionProperty := utils.MongoConnect("Properties")
+	cursor, err := collectionProperty.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: matchFilter}}, sortStage , limitStage, skipStage})
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var property dto.RelatedProperties
+		cursor.Decode(&property)
+		properties = append(properties, property)
+	}
+	if err := cursor.Err(); err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	responseData := dto.ResponseContactData{
+		Data:  contact,
+		PropertiesData: properties,
+		Total: count,
+	}
+	json.NewEncoder(writer).Encode(responseData)
 }
 
 func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
@@ -156,12 +200,62 @@ func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
 func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
 	typeContact := request.URL.Query().Get("contactType")
+	keywordSearch := request.URL.Query().Get("k")
+	filterType := request.URL.Query().Get("type")
+	filterTypeProperty := request.URL.Query().Get("typeProperty")
+	filterCity := request.URL.Query().Get("city")
+	filterDistrict := request.URL.Query().Get("district")
+	pageQuery := request.URL.Query().Get("p")
+	limitQuery := request.URL.Query().Get("l")
+	page, err := strconv.Atoi(pageQuery)
+	if err != nil {
+		panic(err) 
+	}
+	pageSize, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		panic(err) 
+	}
+	skip := (page - 1) * pageSize
 	var output []dto.Contacts
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	filter := bson.D{{Key: "type", Value: typeContact}}
 	filter = append(filter, bson.E{ Key: "status", Value: "active" })
-	cursor, err := utils.MongoConnect("Contacts").Find(ctx, filter)
+	if keywordSearch != "" {
+		keywordFilter := bson.E{ Key:"name", Value: bson.M{"$regex": keywordSearch, "$options": "i"}}
+		filter = append(filter, keywordFilter)
+	}
+	if filterType != "" || filterTypeProperty != "" || filterCity != ""{
+		matchElement := bson.D{}
+		if filterType != "" {
+			typeMatch := bson.E{ Key:"typeproperty", Value: filterType}
+			matchElement = append(matchElement, typeMatch)
+		}
+		if filterTypeProperty != "" {
+			typePropertyMatch := bson.E{ Key:"type", Value: filterTypeProperty}
+			matchElement = append(matchElement, typePropertyMatch)
+		}
+		if filterCity != "" {
+			cityMatch := bson.E{ Key:"city", Value: filterCity}
+			matchElement = append(matchElement, cityMatch)
+		}
+		if filterDistrict != "" {
+			districtMatch := bson.E{ Key:"district", Value: filterDistrict}
+			matchElement = append(matchElement, districtMatch)
+		}
+		match := bson.E{Key: "scope", Value: bson.M{ "$elemMatch" : matchElement }}
+		filter = append(filter, match)
+    }
+	sortQuery := bson.D{{Key: "_id", Value: -1}}
+	count, err := utils.MongoConnect("Contacts").CountDocuments(ctx, filter)
+	if err != nil {
+		panic(err)
+	}
+	matchStage := bson.D{{Key: "$match", Value: filter}}
+	sortStage := bson.D{{Key: "$sort", Value: sortQuery}}
+	limitStage := bson.D{{Key: "$limit", Value: pageSize}}
+	skipStage := bson.D{{Key: "$skip", Value: skip}}
+	cursor, err := utils.MongoConnect("Contacts").Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, skipStage, limitStage})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
@@ -178,5 +272,10 @@ func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(writer).Encode(output)
+	
+	responseData := dto.ResponseData{
+		Data:  output,
+		Total: count,
+	}
+	json.NewEncoder(writer).Encode(responseData)
 }

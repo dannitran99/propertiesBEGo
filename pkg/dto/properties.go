@@ -58,3 +58,18 @@ type Image struct {
 	Name     		 string              `json:"name"`
 	Url      		 string              `json:"url"`
 }
+
+type RelatedProperties struct {
+	ID        		primitive.ObjectID  `bson:"_id"`
+	Type      		string              `json:"type"`
+	City    		string    			`json:"city"`    
+	District    	string    			`json:"district"`   
+	Ward    		string    			`json:"ward"`  
+	Title    		string    			`json:"title"` 
+	Area    		int32    			`json:"area"` 
+	Price    		int64    			`json:"price"` 
+	PriceAvg    	float32    			`json:"priceAvg"` 
+	PriceType    	string    			`json:"priceType"` 
+	Images    		[]Image  			`json:"images"` 
+	CreatedAt 		string  			`json:"createdAt"`
+}
