@@ -149,16 +149,16 @@ func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	matchFilter :=  bson.D{{Key: "user", Value: contact.Username}}
-	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, matchFilter)
-	if err != nil {
-		panic(err)
-	}
 	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "_id", Value: -1}}}}
 	limitStage := bson.D{{Key: "$limit", Value: pageSize}}
 	skipStage := bson.D{{Key: "$skip", Value: skip}}
 	var properties []dto.RelatedProperties
 	collectionProperty := utils.MongoConnect("Properties")
-	cursor, err := collectionProperty.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: matchFilter}}, sortStage , limitStage, skipStage})
+	count, err := collectionProperty.CountDocuments(ctx, matchFilter)
+	if err != nil {
+		panic(err)
+	}
+	cursor, err := collectionProperty.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: matchFilter}}, sortStage , skipStage, limitStage})
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
