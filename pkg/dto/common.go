@@ -9,6 +9,7 @@ type LoginResponse struct {
 type ID struct {
 	Username string `json:"username"`
 	Action   string `json:"action"`
+	Role     string `json:"role"`
 }
 
 type ResponseData struct {

@@ -67,6 +67,50 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(writer).Encode(result)
 }
 
+func RegisterEnterprise(writer http.ResponseWriter, request *http.Request) {
+	username := request.Context().Value("username")
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+        return
+    }
+    defer request.Body.Close()
+    var contact dto.Contacts
+    err = json.Unmarshal(body, &contact)
+    if err != nil {
+        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+        return
+    }
+	var contactDb dto.Contacts
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    collection := utils.MongoConnect("Contacts")
+	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&contactDb)
+
+	if err == nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte(`{ "message": "Không thể tạo thêm request" }`))
+		return
+	}
+	doc := bson.D{
+        primitive.E{Key: "username", Value: username}, 
+        primitive.E{Key: "type", Value: "doanh-nghiep"}, 
+        primitive.E{Key: "name", Value: contact.Name},
+        primitive.E{Key: "avatar", Value: contact.Avatar},
+        primitive.E{Key: "phoneNumber", Value: contact.PhoneNumber},
+        primitive.E{Key: "city", Value: contact.City},
+        primitive.E{Key: "district", Value: contact.District},
+        primitive.E{Key: "ward", Value: contact.Ward},
+        primitive.E{Key: "street", Value: contact.Street},
+        primitive.E{Key: "description", Value: contact.Description},
+        primitive.E{Key: "scope", Value: contact.Scope},
+        primitive.E{Key: "status", Value: "pending"},
+		primitive.E{Key: "createdAt", Value: contact.CreatedAt},
+    }
+    result, _ := collection.InsertOne(ctx, doc)
+	json.NewEncoder(writer).Encode(result)
+}
+
 func UpdateAgency(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)

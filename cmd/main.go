@@ -42,6 +42,7 @@ func main() {
 	router.HandleFunc("/api/getPostedProperty", middleware.VerifyJWT(handler.GetPostedProperty)).Methods(http.MethodGet)
 
 	router.HandleFunc("/api/registerAgency", middleware.VerifyJWT(handler.RegisterAgency)).Methods(http.MethodPost)
+	router.HandleFunc("/api/registerEnterprise", middleware.VerifyJWT(handler.RegisterEnterprise)).Methods(http.MethodPost)
 	router.HandleFunc("/api/updateAgency", middleware.VerifyJWT(handler.UpdateAgency)).Methods(http.MethodPost)
 	router.HandleFunc("/api/getContactUser", middleware.VerifyJWT(handler.GetContactUser)).Methods(http.MethodGet)
 	router.HandleFunc("/api/contact/{id}", handler.GetContactDetail).Methods(http.MethodGet)

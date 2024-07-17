@@ -98,7 +98,7 @@ func ResponseRequestAgency(writer http.ResponseWriter, request *http.Request) {
     defer cancel()
 	if userId.Action == "active" {
 		collectionUser := utils.MongoConnect("Users")
-		update := bson.D{{Key: "$set", Value: bson.D{{Key: "role", Value: "agency"}}}}
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "role", Value: userId.Role}}}}
 		_, err = collectionUser.UpdateOne(ctx, bson.D{{Key: "username", Value: userId.Username}}, update)
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -111,7 +111,7 @@ func ResponseRequestAgency(writer http.ResponseWriter, request *http.Request) {
     results, err := collectionContact.UpdateOne(ctx, bson.D{{Key: "username", Value: userId.Username}}, updateContact)
     if err != nil {
         writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Đổi role không thành công" }`))
+		writer.Write([]byte(`{ "message": "Đổi trạng thái không thành công" }`))
 		return
     }
 	json.NewEncoder(writer).Encode(results)

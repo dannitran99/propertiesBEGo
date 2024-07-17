@@ -267,8 +267,19 @@ func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
 		bson.D{
 			{Key: "$lookup", Value: bson.M{
 				"from":         "Contacts",
-				"localField":   "username",
-				"foreignField": "username",
+                "let": bson.M{ "username" : "$username" },
+                "pipeline": []bson.M{
+                    {
+                        "$match": bson.M{
+                            "$expr": bson.M{
+                                "$and": []interface{}{
+                                    bson.M{"$eq": []interface{}{"$username", "$$username"}},
+                                    bson.M{"$eq": []interface{}{"$status", "active"}},
+                                },
+                            },
+                        },
+                    },
+                },
 				"as":           "agencyInfo",
 			}},
 		},
