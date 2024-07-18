@@ -20,8 +20,7 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	defer cancel()
 	cursor, err := utils.MongoConnect("News").Find(ctx, bson.M{})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -31,8 +30,7 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 		new = append(new, newItem)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(new)
@@ -44,7 +42,8 @@ func GetNewsByID(writer http.ResponseWriter, request *http.Request) {
 	id, _ := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-	panic(err)
+		utils.StatusBadRequest(writer)
+		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -52,8 +51,7 @@ func GetNewsByID(writer http.ResponseWriter, request *http.Request) {
 	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&news)
 
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusNotFound(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(news)

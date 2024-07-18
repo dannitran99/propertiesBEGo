@@ -35,11 +35,13 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	sort := request.URL.Query().Get("sort")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	pageSize, err := strconv.Atoi(limitQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	skip := (page - 1) * pageSize
 	var output []dto.PropertiesInfo
@@ -75,7 +77,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if minPriceQuery != "" {
 		i, err := strconv.Atoi(minPriceQuery)
 		if err != nil {
-			panic(err) // Handle error
+			utils.StatusBadRequest(writer) 
+			return
 		}
 		minPriceFilter := bson.E{Key: "price",Value: bson.M{"$gte": i*1000000}}
 		filter = append(filter, minPriceFilter)
@@ -83,7 +86,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if maxPriceQuery != "" {
 		i, err := strconv.Atoi(maxPriceQuery)
 		if err != nil {
-			panic(err) // Handle error
+			utils.StatusBadRequest(writer) 
+			return
 		}
 		maxPriceFilter := bson.E{Key: "price",Value: bson.M{"$lte": i*1000000}}
 		filter = append(filter, maxPriceFilter)
@@ -91,7 +95,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if minSquareQuery != "" {
 		i, err := strconv.Atoi(minSquareQuery)
 		if err != nil {
-			panic(err) // Handle error
+			utils.StatusBadRequest(writer) 
+			return
 		}
 		minSquareFilter := bson.E{Key: "area",Value: bson.M{"$gte": i}}
 		filter = append(filter, minSquareFilter)
@@ -99,7 +104,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if maxSquareQuery != "" {
 		i, err := strconv.Atoi(maxSquareQuery)
 		if err != nil {
-			panic(err) // Handle error
+			utils.StatusBadRequest(writer) 
+			return
 		}
 		maxSquareFilter := bson.E{Key: "area",Value: bson.M{"$lte": i}}
 		filter = append(filter, maxSquareFilter)
@@ -107,16 +113,14 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if filterVerify == "agency" {
 		cursor, err := utils.MongoConnect("Contacts").Find(ctx, bson.D{{ Key: "status", Value: "active" }})
 		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+			utils.StatusInternalServerError(writer)
 			return
 		}
 		defer cursor.Close(ctx)
 		var results []bson.M
 		var user []string
 		if err := cursor.All(context.TODO(), &results); err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+			utils.StatusInternalServerError(writer)
 			return
 		}
 		for _, result := range results {
@@ -134,7 +138,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	if sort != "" {
 		sortType, err := strconv.Atoi(sort)
 		if err != nil {
-			panic(err) // Handle error
+			utils.StatusBadRequest(writer) 
+			return
 		}
 		switch sortType {
             case 1:
@@ -161,7 +166,8 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 	}
 	count, err := utils.MongoConnect("Properties").CountDocuments(ctx, filter)
 	if err != nil {
-		panic(err)
+		utils.StatusInternalServerError(writer)
+		return
 	}
 	matchStage := bson.D{{Key: "$match", Value: filter}}
 	sortStage := bson.D{{Key: "$sort", Value: sortQuery}}
@@ -178,8 +184,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		},
 	})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -189,8 +194,7 @@ func GetAllProperties(writer http.ResponseWriter, request *http.Request) {
 		output = append(output, property)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	responseData := dto.ResponseData{
@@ -206,11 +210,13 @@ func GetAllPropertiesHome(writer http.ResponseWriter, request *http.Request) {
 	limitQuery := request.URL.Query().Get("l")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	pageSize, err := strconv.Atoi(limitQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	skip := (page - 1) * pageSize
 	var output []dto.Properties
@@ -218,12 +224,12 @@ func GetAllPropertiesHome(writer http.ResponseWriter, request *http.Request) {
 	defer cancel()
 	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(pageSize))
 	if err != nil {
-		panic(err)
+		utils.StatusInternalServerError(writer)
+		return
 	}
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -233,8 +239,7 @@ func GetAllPropertiesHome(writer http.ResponseWriter, request *http.Request) {
 		output = append(output, property)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(output)
@@ -244,15 +249,15 @@ func PostProperties(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
 	var post dto.Properties
     err = json.Unmarshal(body, &post)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
@@ -301,8 +306,7 @@ func GetPostedProperty(writer http.ResponseWriter, request *http.Request) {
 	defer cancel()
 	cursor, err := utils.MongoConnect("Properties").Find(ctx, bson.D{{Key: "user", Value: username}})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -312,8 +316,7 @@ func GetPostedProperty(writer http.ResponseWriter, request *http.Request) {
 		output = append(output, property)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(output)
@@ -324,8 +327,7 @@ func GetPropertiesDetail(writer http.ResponseWriter, request *http.Request) {
 	id := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Nguồn không tồn tại" }`))
+		utils.StatusNotFound(writer)
 		return
 	}
 	var property dto.PropertiesInfo
@@ -343,8 +345,7 @@ func GetPropertiesDetail(writer http.ResponseWriter, request *http.Request) {
 		},
 	})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Bài đăng không tồn tại" }`))
+		utils.StatusNotFound(writer)
 		return
 	}
 	if cursor.Next(ctx) {

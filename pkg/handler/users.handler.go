@@ -20,8 +20,7 @@ func CheckVerifyToken(writer http.ResponseWriter, request *http.Request) {
 	role := request.Context().Value("role").(string)
     token, err := utils.CreateToken(username,role)
     if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Lỗi tạo token" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(token)
@@ -30,16 +29,15 @@ func CheckVerifyToken(writer http.ResponseWriter, request *http.Request) {
 func Login(writer http.ResponseWriter, request *http.Request) {
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
-    // Giải mã nội dung của request body thành một struct User
     var user dto.User
     err = json.Unmarshal(body, &user)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -78,15 +76,15 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 func Register(writer http.ResponseWriter, request *http.Request) {
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
     var user dto.User
     err = json.Unmarshal(body, &user)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
 	 var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -124,15 +122,15 @@ func ChangePassword(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
     var newPass dto.ChangePassword
     err = json.Unmarshal(body, &newPass)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -164,15 +162,15 @@ func DisableAccount(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
     var newPass dto.ChangePassword
     err = json.Unmarshal(body, &newPass)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -227,15 +225,15 @@ func ChangeAvatar(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
     var avatar dto.ChangeAvatar
     err = json.Unmarshal(body, &avatar)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -296,8 +294,7 @@ func GetInfoUser(writer http.ResponseWriter, request *http.Request) {
 		userDb = append(userDb, user)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	json.NewEncoder(writer).Encode(userDb)
@@ -307,15 +304,15 @@ func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
     body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     defer request.Body.Close()
     var userPost dto.UserInfoUpdate
     err = json.Unmarshal(body, &userPost)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
-        return
+		utils.StatusBadRequest(writer) 
+		return
     }
     var userDb dto.User
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -331,8 +328,7 @@ func ChangeInfo(writer http.ResponseWriter, request *http.Request) {
     update := bson.D{{Key: "$set", Value: bson.D{{Key: "fullname", Value: userPost.Name},{Key: "phoneNumber", Value: userPost.PhoneNumber},{Key: "email", Value: userPost.Email}}}}
     result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: userDb.ID}}, update)
     if err != nil {
-        writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Sửa thông tin không thành công" }`))
+		utils.StatusInternalServerError(writer)
 		return
     }
     json.NewEncoder(writer).Encode(result)

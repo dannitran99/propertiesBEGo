@@ -21,14 +21,14 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
     defer request.Body.Close()
     var contact dto.Contacts
     err = json.Unmarshal(body, &contact)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
 	var contactDb dto.Contacts
@@ -38,8 +38,7 @@ func RegisterAgency(writer http.ResponseWriter, request *http.Request) {
 	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&contactDb)
 
 	if err == nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Không thể tạo thêm request" }`))
+		utils.StatusNotImplemented(writer)
 		return
 	}
 	scope := []dto.Scope{{
@@ -71,14 +70,14 @@ func RegisterEnterprise(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
     defer request.Body.Close()
     var contact dto.Contacts
     err = json.Unmarshal(body, &contact)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
 	var contactDb dto.Contacts
@@ -88,8 +87,7 @@ func RegisterEnterprise(writer http.ResponseWriter, request *http.Request) {
 	err = collection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(&contactDb)
 
 	if err == nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Không thể tạo thêm request" }`))
+		utils.StatusNotImplemented(writer)
 		return
 	}
 	doc := bson.D{
@@ -115,14 +113,14 @@ func UpdateAgency(writer http.ResponseWriter, request *http.Request) {
 	username := request.Context().Value("username")
 	body, err := ioutil.ReadAll(request.Body)
     if err != nil {
-        http.Error(writer, "Lỗi đọc nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
     defer request.Body.Close()
     var contact dto.Contacts
     err = json.Unmarshal(body, &contact)
     if err != nil {
-        http.Error(writer, "Lỗi giải mã nội dung request body", http.StatusBadRequest)
+		utils.StatusBadRequest(writer)
         return
     }
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -143,8 +141,7 @@ func UpdateAgency(writer http.ResponseWriter, request *http.Request) {
 	}
     result, err := collection.UpdateOne(ctx, bson.D{{Key: "username", Value: username}}, update)
     if err != nil {
-        writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Sửa thông tin không thành công" }`))
+		utils.StatusInternalServerError(writer)
 		return
     }
     json.NewEncoder(writer).Encode(result)
@@ -170,26 +167,28 @@ func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 	limitQuery := request.URL.Query().Get("l")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	pageSize, err := strconv.Atoi(limitQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	skip := (page - 1) * pageSize
 	var contact dto.Contacts
 	id, _ := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-	panic(err)
+		utils.StatusNotFound(writer)
+		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := utils.MongoConnect("Contacts")
 	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&contact)
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusNotFound(writer)
 		return
 	}
 	matchFilter :=  bson.D{{Key: "user", Value: contact.Username}}
@@ -200,12 +199,12 @@ func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 	collectionProperty := utils.MongoConnect("Properties")
 	count, err := collectionProperty.CountDocuments(ctx, matchFilter)
 	if err != nil {
-		panic(err)
+		utils.StatusInternalServerError(writer)
+		return
 	}
 	cursor, err := collectionProperty.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: matchFilter}}, sortStage , skipStage, limitStage})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -215,8 +214,7 @@ func GetContactDetail(writer http.ResponseWriter, request *http.Request) {
 		properties = append(properties, property)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	responseData := dto.ResponseContactData{
@@ -234,8 +232,7 @@ func DeleteRequestAgency(writer http.ResponseWriter, request *http.Request) {
 	collection := utils.MongoConnect("Contacts")
     deleteResult, _ := collection.DeleteOne(ctx, bson.D{{Key: "username", Value: username}})
     if deleteResult.DeletedCount == 0 {
-        writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "Xóa không thành công" }`))
+		utils.StatusInternalServerError(writer)
 		return
     }
     json.NewEncoder(writer).Encode(deleteResult)
@@ -253,11 +250,13 @@ func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 	limitQuery := request.URL.Query().Get("l")
 	page, err := strconv.Atoi(pageQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	pageSize, err := strconv.Atoi(limitQuery)
 	if err != nil {
-		panic(err) 
+		utils.StatusBadRequest(writer) 
+		return
 	}
 	skip := (page - 1) * pageSize
 	var output []dto.Contacts
@@ -293,7 +292,7 @@ func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 	sortQuery := bson.D{{Key: "_id", Value: -1}}
 	count, err := utils.MongoConnect("Contacts").CountDocuments(ctx, filter)
 	if err != nil {
-		panic(err)
+		utils.StatusInternalServerError(writer)
 	}
 	matchStage := bson.D{{Key: "$match", Value: filter}}
 	sortStage := bson.D{{Key: "$sort", Value: sortQuery}}
@@ -301,8 +300,7 @@ func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 	skipStage := bson.D{{Key: "$skip", Value: skip}}
 	cursor, err := utils.MongoConnect("Contacts").Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, skipStage, limitStage})
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -312,8 +310,7 @@ func GetAllContact(writer http.ResponseWriter, request *http.Request) {
 		output = append(output, contact)
 	}
 	if err := cursor.Err(); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		utils.StatusInternalServerError(writer)
 		return
 	}
 	
