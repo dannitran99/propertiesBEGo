@@ -34,6 +34,7 @@ func main() {
 
 	router.HandleFunc("/api/news", handler.GetAllNews).Methods(http.MethodGet)
 	router.HandleFunc("/api/news/{id}", handler.GetNewsByID).Methods(http.MethodGet)
+	router.HandleFunc("/api/postNews", middleware.VerifyJWT(handler.PostNews)).Methods(http.MethodPost)
 
 	router.HandleFunc("/api/properties", handler.GetAllProperties).Methods(http.MethodGet)
 	router.HandleFunc("/api/propertiesMain", handler.GetAllPropertiesHome).Methods(http.MethodGet)
