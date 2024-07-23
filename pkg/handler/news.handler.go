@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetAllNews(writer http.ResponseWriter, request *http.Request) {
@@ -65,6 +66,7 @@ func PostNews(writer http.ResponseWriter, request *http.Request) {
 		primitive.E{Key: "title", Value: post.Title},
 		primitive.E{Key: "description", Value: post.Description},
         primitive.E{Key: "thumbnail", Value: post.Thumbnail},
+        primitive.E{Key: "source", Value: post.Source},
         primitive.E{Key: "content", Value: post.Content},
         primitive.E{Key: "user", Value: username},
 		primitive.E{Key: "createdAt", Value: post.CreatedAt},
@@ -75,21 +77,32 @@ func PostNews(writer http.ResponseWriter, request *http.Request) {
 
 func GetNewsByID(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
-	var news dto.News
 	id, _ := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		utils.StatusBadRequest(writer)
 		return
 	}
+	var news dto.NewsDetail
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := utils.MongoConnect("News")
-	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&news)
-
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: objID}}}}, 
+		{
+			{Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "user",
+				"foreignField": "username",
+				"as":           "relatedUser",
+			}},
+		},
+	})
 	if err != nil {
 		utils.StatusNotFound(writer)
 		return
+	}
+	if cursor.Next(ctx) {
+		cursor.Decode(&news)
 	}
 	json.NewEncoder(writer).Encode(news)
 }

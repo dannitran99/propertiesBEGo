@@ -9,7 +9,30 @@ type News struct {
 	Title 		string             `json:"title"`
 	Description string             `json:"description"`
 	Thumbnail 	string             `json:"thumbnail"`
+	Source 		string             `json:"source"`
 	Content 	[]interface{}      `json:"content"`
 	User		string			   `json:"user"` 
 	CreatedAt 	string  		   `json:"createdAt"`
+}
+
+type NewsDetail struct {
+	ID        	primitive.ObjectID `bson:"_id"`
+	Category    string             `json:"category"`
+	Tags   		[]string           `json:"tags"`
+	Title 		string             `json:"title"`
+	Description string             `json:"description"`
+	Thumbnail 	string             `json:"thumbnail"`
+	Source 		string             `json:"source"`
+	Content 	[]ContentNews      `json:"content"`
+	User		string			   `json:"user"` 
+	RelatedUser	[]UserRelated      `json:"relatedUser"`
+	CreatedAt 	string  		   `json:"createdAt"`
+}
+
+type ContentNews struct {
+	ID        	string		 `json:"id"`
+	Content 	string		 `json:"content,omitempty"`
+	Size 		string		 `json:"size,omitempty"`
+	Image	 	string		 `json:"image,omitempty"`
+	Description string		 `json:"description,omitempty"`
 }
