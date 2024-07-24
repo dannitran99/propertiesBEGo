@@ -32,7 +32,13 @@ type NewsDetail struct {
 type ContentNews struct {
 	ID        	string		 `json:"id"`
 	Content 	string		 `json:"content,omitempty"`
+	IsBold		bool		 `json:"isBold,omitempty"`
+	IsItalic	bool		 `json:"isItalic,omitempty"`
 	Size 		string		 `json:"size,omitempty"`
 	Image	 	string		 `json:"image,omitempty"`
 	Description string		 `json:"description,omitempty"`
+	Url			string		 `json:"url,omitempty"`
+	HasHeader	bool		 `json:"hasHeader,omitempty"`
+	TableRow	[][]string	 `json:"tableRow,omitempty"`
+	TableHead	[]string	 `json:"tableHead,omitempty"`
 }
