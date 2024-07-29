@@ -41,4 +41,11 @@ type ContentNews struct {
 	HasHeader	bool		 `json:"hasHeader,omitempty"`
 	TableRow	[][]string	 `json:"tableRow,omitempty"`
 	TableHead	[]string	 `json:"tableHead,omitempty"`
+	List		[]string	 `json:"list,omitempty"`
+	Article		[]Article	 `json:"article,omitempty"`
+}
+
+type Article struct {
+	Title 		string             `json:"title"`
+	Url		 	string             `json:"url"`
 }
