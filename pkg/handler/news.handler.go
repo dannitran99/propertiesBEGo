@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,10 +18,50 @@ import (
 
 func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
+	typeNews := request.URL.Query().Get("type")
+	tags := request.URL.Query().Get("tags")
+	keywordSearch := request.URL.Query().Get("k")
+	pageQuery := request.URL.Query().Get("p")
+	limitQuery := request.URL.Query().Get("l")
+	page, err := strconv.Atoi(pageQuery)
+	if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+	}
+	pageSize, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+	}
+	skip := (page - 1) * pageSize
+	filter := bson.D{}
+	if typeNews != "" {
+		typeFilter := bson.E{ Key:"category", Value: typeNews}
+		filter = append(filter, typeFilter)
+	}
+	if keywordSearch != "" {
+		keywordTitleFilter := bson.M{ "title": bson.M{"$regex": keywordSearch, "$options": "i"}}
+		keywordTagsFilter := bson.M{ "tags": bson.M{"$regex": keywordSearch, "$options": "i"}}
+		keywordFilter := bson.E{Key: "$or", Value: []bson.M{keywordTitleFilter,keywordTagsFilter}}
+		filter = append(filter, keywordFilter)
+	}
+	if tags != "" {
+		tagsFilter := bson.E{ Key:"tags", Value: tags}
+		filter = append(filter, tagsFilter)
+	}
+	sortQuery := bson.D{{Key: "_id", Value: -1}}
+	matchStage := bson.D{{Key: "$match", Value: filter}}
+	sortStage := bson.D{{Key: "$sort", Value: sortQuery}}
+	limitStage := bson.D{{Key: "$limit", Value: pageSize}}
+	skipStage := bson.D{{Key: "$skip", Value: skip}}
 	var new []dto.News
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cursor, err := utils.MongoConnect("News").Find(ctx, bson.M{})
+	count, err := utils.MongoConnect("News").CountDocuments(ctx, filter)
+	if err != nil {
+		utils.StatusInternalServerError(writer)
+	}
+	cursor, err := utils.MongoConnect("News").Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, skipStage, limitStage})
 	if err != nil {
 		utils.StatusInternalServerError(writer)
 		return
@@ -35,7 +76,11 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 		utils.StatusInternalServerError(writer)
 		return
 	}
-	json.NewEncoder(writer).Encode(new)
+	responseData := dto.ResponseData{
+		Data:  new,
+		Total: count,
+	}
+	json.NewEncoder(writer).Encode(responseData)
 }
 
 func PostNews(writer http.ResponseWriter, request *http.Request) {
