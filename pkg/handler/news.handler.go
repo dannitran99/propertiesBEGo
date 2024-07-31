@@ -8,6 +8,7 @@ import (
 	"propertiesGo/pkg/dto"
 	"propertiesGo/pkg/utils"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -36,7 +37,9 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	skip := (page - 1) * pageSize
 	filter := bson.D{}
 	if typeNews != "" {
-		typeFilter := bson.E{ Key:"category", Value: typeNews}
+		typeFilter := bson.E{ Key:"category", Value: bson.M{
+				"$in": strings.Split(typeNews, ","),
+			},}
 		filter = append(filter, typeFilter)
 	}
 	if keywordSearch != "" {
