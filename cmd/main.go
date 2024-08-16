@@ -57,7 +57,7 @@ func main() {
 	router.HandleFunc("/api/admin/cancelDeleteAccount", middleware.VerifyJWT(handler.CancelDeleteAccount)).Methods(http.MethodPost)
 	
 	c := cors.New(cors.Options{
-        AllowedOrigins: []string{"http://localhost:8080","http://localhost:3000"},
+        AllowedOrigins: []string{"http://localhost:8080","http://localhost:3000","https://properties-by-vue.vercel.app/"},
         AllowCredentials: true,
 		AllowedMethods: []string{"POST", "GET", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
