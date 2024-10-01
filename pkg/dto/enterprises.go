@@ -17,5 +17,6 @@ type Enterprise struct {
 	PhoneNumber    	string    			`json:"phoneNumber"`
 	Email	    	string    			`json:"email"`
 	Website    		string    			`json:"website"`
+	Pinned			string				`json:"pinned"`
 	CreatedAt 		string  			`json:"createdAt"`
 }
