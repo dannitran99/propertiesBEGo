@@ -20,3 +20,8 @@ type Enterprise struct {
 	Pinned			string				`json:"pinned"`
 	CreatedAt 		string  			`json:"createdAt"`
 }
+
+type PinnedEnterprise struct {
+	ID				primitive.ObjectID  `json:"id"`
+	Pinned			string             	`json:"pinned"`
+}

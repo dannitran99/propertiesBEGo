@@ -127,3 +127,38 @@ func GetAllEnterprise(writer http.ResponseWriter, request *http.Request){
 	}
 	json.NewEncoder(writer).Encode(responseData)
 }
+
+func SetPinnedEnterprise(writer http.ResponseWriter, request *http.Request){
+	writer.Header().Set(contentType, accepted)
+	role := request.Context().Value("role")
+	if role != "admin" {
+        utils.StatusForbidden(writer)
+		return
+    }
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+    }
+    defer request.Body.Close()
+	var post dto.PinnedEnterprise
+    err = json.Unmarshal(body, &post)
+    if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	collection := utils.MongoConnect("Enterprises")
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "pinned", Value: post.Pinned},
+		}},
+	}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: post.ID}}, update)
+    if err != nil {
+		utils.StatusInternalServerError(writer)
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
+}
