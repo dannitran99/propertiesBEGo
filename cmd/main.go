@@ -52,6 +52,7 @@ func main() {
 
 	router.HandleFunc("/api/createEnterprise", middleware.VerifyJWT(handler.CreateEnterprise)).Methods(http.MethodPost)
 	router.HandleFunc("/api/getAllEnterprise", handler.GetAllEnterprise).Methods(http.MethodGet)
+	router.HandleFunc("/api/getPinnedEnterprise", handler.GetPinnedEnterprise).Methods(http.MethodGet)
 	router.HandleFunc("/api/setPinnedEnterprise", middleware.VerifyJWT(handler.SetPinnedEnterprise)).Methods(http.MethodPost)
 	
 	router.HandleFunc("/api/admin/getRequestAgency", middleware.VerifyJWT(handler.GetRequestAgency)).Methods(http.MethodGet)

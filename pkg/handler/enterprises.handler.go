@@ -162,3 +162,26 @@ func SetPinnedEnterprise(writer http.ResponseWriter, request *http.Request){
     }
     json.NewEncoder(writer).Encode(result)
 }
+
+func GetPinnedEnterprise(writer http.ResponseWriter, request *http.Request){
+	writer.Header().Set("content-type", "application/json")
+	var enterprises []dto.Enterprise
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cursor, err := utils.MongoConnect("Enterprises").Find(ctx, bson.D{{Key: "pinned", Value: bson.M{"$ne": ""}}})
+	if err != nil {
+		utils.StatusInternalServerError(writer)
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var enterprise dto.Enterprise
+		cursor.Decode(&enterprise)
+		enterprises = append(enterprises, enterprise)
+	}
+	if err := cursor.Err(); err != nil {
+		utils.StatusInternalServerError(writer)
+		return
+	}
+	json.NewEncoder(writer).Encode(enterprises)
+}
