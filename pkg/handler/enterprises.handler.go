@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -184,4 +185,68 @@ func GetPinnedEnterprise(writer http.ResponseWriter, request *http.Request){
 		return
 	}
 	json.NewEncoder(writer).Encode(enterprises)
+}
+
+func GetEnterpriseDetail(writer http.ResponseWriter, request *http.Request){
+	writer.Header().Set("content-type", "application/json")
+	// pageQuery := request.URL.Query().Get("p")
+	// limitQuery := request.URL.Query().Get("l")
+	// page, err := strconv.Atoi(pageQuery)
+	// if err != nil {
+	// 	utils.StatusBadRequest(writer) 
+	// 	return
+	// }
+	// pageSize, err := strconv.Atoi(limitQuery)
+	// if err != nil {
+	// 	utils.StatusBadRequest(writer) 
+	// 	return
+	// }
+	// skip := (page - 1) * pageSize
+	var enterprise dto.Enterprise
+	id, _ := mux.Vars(request)["id"]
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.StatusNotFound(writer)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := utils.MongoConnect("Enterprises")
+	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: objID}}).Decode(&enterprise)
+	if err != nil {
+		utils.StatusNotFound(writer)
+		return
+	}
+	// matchFilter :=  bson.D{{Key: "user", Value: contact.Username}}
+	// sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "_id", Value: -1}}}}
+	// limitStage := bson.D{{Key: "$limit", Value: pageSize}}
+	// skipStage := bson.D{{Key: "$skip", Value: skip}}
+	// var properties []dto.RelatedProperties
+	// collectionProperty := utils.MongoConnect("Properties")
+	// count, err := collectionProperty.CountDocuments(ctx, matchFilter)
+	// if err != nil {
+	// 	utils.StatusInternalServerError(writer)
+	// 	return
+	// }
+	// cursor, err := collectionProperty.Aggregate(ctx, mongo.Pipeline{bson.D{{Key: "$match", Value: matchFilter}}, sortStage , skipStage, limitStage})
+	// if err != nil {
+	// 	utils.StatusInternalServerError(writer)
+	// 	return
+	// }
+	// defer cursor.Close(ctx)
+	// for cursor.Next(ctx) {
+	// 	var property dto.RelatedProperties
+	// 	cursor.Decode(&property)
+	// 	properties = append(properties, property)
+	// }
+	// if err := cursor.Err(); err != nil {
+	// 	utils.StatusInternalServerError(writer)
+	// 	return
+	// }
+	// responseData := dto.ResponseContactData{
+	// 	Data:  contact,
+	// 	PropertiesData: properties,
+	// 	Total: count,
+	// }
+	json.NewEncoder(writer).Encode(enterprise)
 }
