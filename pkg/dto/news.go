@@ -12,6 +12,7 @@ type News struct {
 	Source 		string             `json:"source"`
 	Content 	[]interface{}      `json:"content"`
 	User		string			   `json:"user"` 
+	Pinned		bool			   `json:"pinned"` 
 	CreatedAt 	string  		   `json:"createdAt"`
 }
 
@@ -26,6 +27,7 @@ type NewsDetail struct {
 	Content 	[]ContentNews      `json:"content"`
 	User		string			   `json:"user"` 
 	RelatedUser	[]UserRelated      `json:"relatedUser"`
+	Pinned		bool			   `json:"pinned"` 
 	CreatedAt 	string  		   `json:"createdAt"`
 }
 

@@ -117,6 +117,7 @@ func PostNews(writer http.ResponseWriter, request *http.Request) {
         primitive.E{Key: "source", Value: post.Source},
         primitive.E{Key: "content", Value: post.Content},
         primitive.E{Key: "user", Value: username},
+        primitive.E{Key: "pinned", Value: false},
 		primitive.E{Key: "createdAt", Value: post.CreatedAt},
     }
     result, _ := utils.MongoConnect("News").InsertOne(ctx, doc)
