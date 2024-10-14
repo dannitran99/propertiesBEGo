@@ -51,3 +51,8 @@ type Article struct {
 	Title 		string             `json:"title"`
 	Url		 	string             `json:"url"`
 }
+
+type PinnedNews struct {
+	ID				primitive.ObjectID  `json:"id"`
+	Value			bool             	`json:"value"`
+}

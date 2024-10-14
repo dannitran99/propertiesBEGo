@@ -21,6 +21,7 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "application/json")
 	typeNews := request.URL.Query().Get("type")
 	tags := request.URL.Query().Get("tags")
+	pinned := request.URL.Query().Get("pinned")
 	keywordSearch := request.URL.Query().Get("k")
 	pageQuery := request.URL.Query().Get("p")
 	limitQuery := request.URL.Query().Get("l")
@@ -47,6 +48,10 @@ func GetAllNews(writer http.ResponseWriter, request *http.Request) {
 		keywordTagsFilter := bson.M{ "tags": bson.M{"$regex": keywordSearch, "$options": "i"}}
 		keywordFilter := bson.E{Key: "$or", Value: []bson.M{keywordTitleFilter,keywordTagsFilter}}
 		filter = append(filter, keywordFilter)
+	}
+	if pinned != "" {
+		pinnedFilter := bson.E{ Key:"pinned", Value: true}
+		filter = append(filter, pinnedFilter)
 	}
 	if tags != "" {
 		tagsFilter := bson.E{ Key:"tags", Value: tags}
@@ -154,4 +159,39 @@ func GetNewsByID(writer http.ResponseWriter, request *http.Request) {
 		cursor.Decode(&news)
 	}
 	json.NewEncoder(writer).Encode(news)
+}
+
+func SetPinnedNews(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	role := request.Context().Value("role")
+	if role != "admin" {
+        utils.StatusForbidden(writer)
+		return
+	}
+	body, err := ioutil.ReadAll(request.Body)
+    if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+    }
+    defer request.Body.Close()
+	var post dto.PinnedNews
+    err = json.Unmarshal(body, &post)
+    if err != nil {
+		utils.StatusBadRequest(writer) 
+		return
+    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	collection := utils.MongoConnect("News")
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "pinned", Value: post.Value},
+		}},
+	}
+    result, err := collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: post.ID}}, update)
+    if err != nil {
+		utils.StatusInternalServerError(writer)
+		return
+    }
+    json.NewEncoder(writer).Encode(result)
 }
